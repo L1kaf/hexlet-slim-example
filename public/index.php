@@ -6,6 +6,8 @@ require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
 
+$users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
+
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория, в которой будут храниться шаблоны
@@ -21,8 +23,13 @@ $app->get('/', function ($request, $response) {
     // return $response->write('Welcome to Slim!');
 });
 
-$app->get('/users', function ($request, $response) {
-    return $response->write('GET /users');
+$app->get('/users', function ($request, $response) use ($users) {
+    $userName = $request->getQueryParam('user');
+    $filterUsers = array_filter($users, function ($user) use ($userName) {
+        return str_contains($user, $userName);
+    });
+    $params = ['users' => $filterUsers, 'userName' => $userName];
+    return $this->get('renderer')->render($response, "users/index.phtml", $params);
 });
 
 $app->post('/users', function ($request, $response) {
