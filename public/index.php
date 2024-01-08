@@ -16,6 +16,8 @@ $container->set('renderer', function () {
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 
+$usersFile = __DIR__ . '/../data/users.json';
+
 $app->get('/', function ($request, $response) {
     $response->getBody()->write('Welcome to Slim!');
     return $response;
@@ -32,8 +34,31 @@ $app->get('/users', function ($request, $response) use ($users) {
     return $this->get('renderer')->render($response, "users/index.phtml", $params);
 });
 
-$app->post('/users', function ($request, $response) {
-    return $response->withStatus(302);
+$app->get('/users/new', function ($request, $response) {
+    $params = [
+        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
+    ];
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+});
+
+$app->post('/users', function ($request, $response) use ($usersFile) {
+    $user = $request->getParsedBodyParam('user');
+
+    $id = uniqid();
+
+    $newUser = [
+        'id' => $id,
+        'nickname' => $user['name'],
+        'email' => $user["email"],
+    ];
+
+    $existingUsers = json_decode(file_get_contents($usersFile), true);
+
+    $existingUsers[] = $newUser;
+
+    file_put_contents($usersFile, json_encode($existingUsers, JSON_PRETTY_PRINT));
+
+    return $response->withHeader('Location', '/users')->withStatus(302);
 });
 
 $app->get('/courses/{id}', function ($request, $response, array $args) {
