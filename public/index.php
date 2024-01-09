@@ -8,8 +8,6 @@ use DI\Container;
 
 session_start();
 
-$users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
-
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория, в которой будут храниться шаблоны
@@ -33,24 +31,27 @@ $app->get('/', function ($request, $response) {
     // return $response->write('Welcome to Slim!');
 })->setName('index');;
 
-$app->get('/users', function ($request, $response) use ($users) {
+$app->get('/users', function ($request, $response) use ($usersFile) {
+    $usersData = json_decode(file_get_contents($usersFile), true);
+
     $userName = $request->getQueryParam('user');
-    $filterUsers = array_filter($users, function ($user) use ($userName) {
-        return str_contains($user, $userName);
+
+    $filterUsers = array_filter($usersData, function ($user) use ($userName) {
+        return str_contains($user['nickname'], $userName);
     });
 
     $messages = $this->get('flash')->getMessages();
 
     $params = ['users' => $filterUsers, 'userName' => $userName, 'flash' => $messages];  
     return $this->get('renderer')->render($response, "users/index.phtml", $params);
-})->setName('users');
+})->setName('users.index');
 
 $app->get('/users/new', function ($request, $response) {
     $params = [
         'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
     ];
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
-})->setName('new');
+})->setName('users.new');
 
 $app->post('/users', function ($request, $response) use ($usersFile) {
     $user = $request->getParsedBodyParam('user');
@@ -72,12 +73,12 @@ $app->post('/users', function ($request, $response) use ($usersFile) {
     $this->get('flash')->addMessage('success', 'User was added successfully');
 
     return $response->withHeader('Location', '/users')->withStatus(302);
-})->setName('creat');
+})->setName('users.store');
 
 $app->get('/courses/{id}', function ($request, $response, array $args) {
     $id = $args['id'];
     return $response->write("Course id: {$id}");
-})->setName('course');;
+})->setName('courses.show');;
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($usersFile) {
     $userId = $args['id'];
@@ -100,6 +101,6 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($usersFile) 
 
     $params = ['id' => $userId, 'nickname' => 'user-' . $userId];
     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-})->setName('user');
+})->setName('users.show');
 
 $app->run();
