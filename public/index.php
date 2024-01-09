@@ -68,11 +68,26 @@ $app->get('/courses/{id}', function ($request, $response, array $args) {
     return $response->write("Course id: {$id}");
 })->setName('course');;
 
-$app->get('/users/{id}', function ($request, $response, $args) {
-    $params = ['id' => $args['id'], 'nickname' => 'user-' . $args['id']];
-    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
-    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
-    // $this в Slim это контейнер зависимостей
+$app->get('/users/{id}', function ($request, $response, $args) use ($usersFile) {
+    $userId = $args['id'];
+
+    $existingUsers = json_decode(file_get_contents($usersFile), true);
+
+    $userExists = false;
+    foreach ($existingUsers as $user) {
+        if ($user['id'] === $userId) {
+            $userExists = true;
+            break;
+        }
+    }
+
+    if (!$userExists) {
+        return $response->withStatus(404)
+                        ->withHeader('Content-Type', 'text/html')
+                        ->write('Page not found');
+    }
+
+    $params = ['id' => $userId, 'nickname' => 'user-' . $userId];
     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
 })->setName('user');
 
