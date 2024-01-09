@@ -6,6 +6,8 @@ require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
 
+session_start();
+
 $users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
 
 $container = new Container();
@@ -13,6 +15,10 @@ $container->set('renderer', function () {
     // Параметром передается базовая директория, в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
+$container->set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
+
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 
@@ -32,7 +38,10 @@ $app->get('/users', function ($request, $response) use ($users) {
     $filterUsers = array_filter($users, function ($user) use ($userName) {
         return str_contains($user, $userName);
     });
-    $params = ['users' => $filterUsers, 'userName' => $userName];
+
+    $messages = $this->get('flash')->getMessages();
+
+    $params = ['users' => $filterUsers, 'userName' => $userName, 'flash' => $messages];  
     return $this->get('renderer')->render($response, "users/index.phtml", $params);
 })->setName('users');
 
@@ -59,6 +68,8 @@ $app->post('/users', function ($request, $response) use ($usersFile) {
     $existingUsers[] = $newUser;
 
     file_put_contents($usersFile, json_encode($existingUsers, JSON_PRETTY_PRINT));
+
+    $this->get('flash')->addMessage('success', 'User was added successfully');
 
     return $response->withHeader('Location', '/users')->withStatus(302);
 })->setName('creat');
