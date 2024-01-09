@@ -30,7 +30,7 @@ $app->get('/', function ($request, $response) {
     return $response;
     // Благодаря пакету slim/http этот же код можно записать короче
     // return $response->write('Welcome to Slim!');
-})->setName('index');;
+})->setName('index');
 
 $app->get('/users', function ($request, $response) use ($usersFile) {
     $usersData = json_decode(file_get_contents($usersFile), true);
@@ -43,7 +43,7 @@ $app->get('/users', function ($request, $response) use ($usersFile) {
 
     $messages = $this->get('flash')->getMessages();
 
-    $params = ['users' => $filterUsers, 'userName' => $userName, 'flash' => $messages];  
+    $params = ['users' => $filterUsers, 'userName' => $userName, 'flash' => $messages];
     return $this->get('renderer')->render($response, "users/index.phtml", $params);
 })->setName('users.index');
 
@@ -89,7 +89,7 @@ $app->post('/users', function ($request, $response) use ($usersFile) {
 $app->get('/courses/{id}', function ($request, $response, array $args) {
     $id = $args['id'];
     return $response->write("Course id: {$id}");
-})->setName('courses.show');;
+})->setName('courses.show');
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($usersFile) {
     $userId = $args['id'];
