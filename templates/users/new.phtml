@@ -5,14 +5,20 @@
     <div>
         <label>
             Nickname:
-            <input type="text" required name="user[name]" value="<?= htmlspecialchars($user['name']) ?>">
+            <input type="text" name="user[name]" value="<?= htmlspecialchars($user['name']) ?>">
         </label>
+        <?php if (isset($errors['name'])): ?>
+            <div><?= $errors['name'] ?></div>
+        <?php endif ?>
     </div>
     <br>
     <div>
     <label>
         Email:
-      <input type="email" required name="user[email]" value="<?= htmlspecialchars($user['email']) ?>">
+      <input type="email" name="user[email]" value="<?= htmlspecialchars($user['email']) ?>">
+      <?php if (isset($errors['email'])): ?>
+            <div><?= $errors['email'] ?></div>
+        <?php endif ?>
     </label>
     </div>
     <br>

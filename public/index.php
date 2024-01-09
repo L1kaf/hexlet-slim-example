@@ -5,6 +5,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
 use DI\Container;
+use SlimExample\Validator;
 
 session_start();
 
@@ -54,7 +55,17 @@ $app->get('/users/new', function ($request, $response) {
 })->setName('users.new');
 
 $app->post('/users', function ($request, $response) use ($usersFile) {
+    $validator = new Validator();
     $user = $request->getParsedBodyParam('user');
+    $errors = $validator->validate($user);
+
+    if (count($errors) > 0) {
+        $params = [
+            'user' => $user,
+            'errors' => $errors
+        ];
+        return $this->get('renderer')->render($response->withStatus(422), 'users/new.phtml', $params);
+    }
 
     $id = uniqid();
 
