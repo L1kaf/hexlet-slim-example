@@ -4,6 +4,7 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
+use Slim\Middleware\MethodOverrideMiddleware;
 use DI\Container;
 use SlimExample\Validator;
 
@@ -20,10 +21,11 @@ $container->set('flash', function () {
 
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
+$app->add(MethodOverrideMiddleware::class);
 
 $usersFile = __DIR__ . '/../data/users.json';
 
-$router = $app->getRouteCollector()->getRouteParser();
+
 
 $app->get('/', function ($request, $response) {
     $response->getBody()->write('Welcome to Slim!');
@@ -49,7 +51,7 @@ $app->get('/users', function ($request, $response) use ($usersFile) {
 
 $app->get('/users/new', function ($request, $response) {
     $params = [
-        'user' => ['name' => '', 'email' => '', 'password' => '', 'passwordConfirmation' => '', 'city' => ''],
+        'user' => ['name' => '', 'email' => ''],
     ];
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('users.new');
@@ -113,5 +115,59 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($usersFile) 
     $params = ['id' => $userId, 'nickname' => 'user-' . $userId];
     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
 })->setName('users.show');
+
+$app->get('/users/{id}/edit', function ($request, $response, $args) use ($usersFile) {
+    $userId = $args['id'];
+    $users = json_decode(file_get_contents($usersFile), true);
+
+    $user = null;
+    foreach ($users as $existingUser) {
+        if ($existingUser['id'] == $userId) {
+            $user = $existingUser;
+            break;
+        }
+    }
+
+    $params = ['user' => $user, 'errors' => []];
+    return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+})->setName('users.edit');
+
+$app->patch('/users/{id}', function ($request, $response, array $args) use ($usersFile)  {
+    $userId = $args['id'];
+    $users = json_decode(file_get_contents($usersFile), true);
+    $user = null;
+    foreach ($users as $existingUser) {
+        if ($existingUser['id'] == $userId) {
+            $user = $existingUser;
+            break;
+        }
+    }
+    $data = $request->getParsedBodyParam('user');
+
+    $validator = new Validator();
+    $errors = $validator->validate($data);
+
+    if (count($errors) === 0) {
+        $user['name'] = $data['name'];
+
+        foreach ($users as &$existingUser) {
+            if ($existingUser['id'] == $userId) {
+                $existingUser = $user;
+            }
+        }
+
+        file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
+        
+        return $response->withRedirect('/users/' . $userId, 302);
+    }
+
+    $params = [
+        'user' => $user,
+        'errors' => $errors
+    ];
+
+    $response = $response->withStatus(422);
+    return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+});
 
 $app->run();
