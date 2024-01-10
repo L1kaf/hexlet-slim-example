@@ -148,7 +148,7 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
     $errors = $validator->validate($data);
 
     if (count($errors) === 0) {
-        $user['name'] = $data['name'];
+        $user['email'] = $data['email'];
 
         foreach ($users as &$existingUser) {
             if ($existingUser['id'] == $userId) {
