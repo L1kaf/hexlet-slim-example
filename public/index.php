@@ -41,7 +41,12 @@ $app->get('/users', function ($request, $response) {
 
     $messages = $this->get('flash')->getMessages();
 
-    $params = ['users' => $filterUsers, 'userName' => $userName, 'flash' => $messages];
+    $params = [
+        'users' => $filterUsers,
+        'userName' => $userName,
+        'flash' => $messages,
+        'currentUser' => $_SESSION['user'] ?? null
+    ];
     return $this->get('renderer')->render($response, "users/index.phtml", $params);
 })->setName('users.index');
 
@@ -178,6 +183,36 @@ $app->delete('/users/{id}', function ($request, $response, array $args) {
     $this->get('flash')->addMessage('success', 'School has been deleted');
 
     return $response->withHeader('Set-Cookie', "users={$encodedUsers}")->withRedirect('/users', 302);
+});
+
+$app->get('/login', function ($request, $response) {
+    $params = ['currentUser' => $_SESSION['user'] ?? null];
+    return $this->get('renderer')->render($response, 'users/login.phtml', $params);
+});
+
+$app->post('/session', function ($request, $response) use ($users) {
+    $userData = $request->getParsedBodyParam('user');
+    $users = json_decode($request->getCookieParam('users', json_encode([])), true);
+    $user = null;
+    foreach ($users as $userItem) {
+        if ($userItem['name'] === $userData['name']) {
+            $user = $userItem;
+            break;
+        }
+    }
+
+    if ($user) {
+        $_SESSION['user'] = $user;
+    } else {
+        $this->get('flash')->addMessage('error', 'Wrong email');
+    }
+    return $response->withRedirect('/users');
+});
+
+$app->delete('/session', function ($request, $response) {
+    $_SESSION = [];
+    session_destroy();
+    return $response->withRedirect('/users');
 });
 
 $app->run();

@@ -4,6 +4,14 @@
         echo $message;
     }
 } ?></p>
+
+<?php if ($currentUser): ?>
+    <form action="/session" method="post">
+        <input type="hidden" name="_METHOD" value="DELETE">
+        <input type="submit" value="Sign Out">
+    </form>
+<?php endif; ?>
+
 <hr>
 
 <form action="/users">

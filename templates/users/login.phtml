@@ -1,0 +1,13 @@
+<h1>Login</h1>
+<?php if ($currentUser): ?>
+    <div><?= $currentUser['email'] ?></div>
+    <form action="/session" method="post">
+        <input type="hidden" name="_METHOD" value="DELETE">
+        <input type="submit" value="Sign Out">
+    </form>
+<?php else: ?>
+    <form action="/session" method="post">
+        <input type="email" required name="user[email]" value="">
+        <input type="submit" value="Sign In">
+    </form>
+<?php endif; ?>
