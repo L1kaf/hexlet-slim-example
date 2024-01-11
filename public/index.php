@@ -190,7 +190,7 @@ $app->get('/login', function ($request, $response) {
     return $this->get('renderer')->render($response, 'users/login.phtml', $params);
 });
 
-$app->post('/session', function ($request, $response) use ($users) {
+$app->post('/session', function ($request, $response) {
     $userData = $request->getParsedBodyParam('user');
     $users = json_decode($request->getCookieParam('users', json_encode([])), true);
     $user = null;
