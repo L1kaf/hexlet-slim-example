@@ -23,10 +23,6 @@ $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 $app->add(MethodOverrideMiddleware::class);
 
-$usersFile = __DIR__ . '/../data/users.json';
-
-
-
 $app->get('/', function ($request, $response) {
     $response->getBody()->write('Welcome to Slim!');
     return $response;
@@ -34,8 +30,8 @@ $app->get('/', function ($request, $response) {
     // return $response->write('Welcome to Slim!');
 })->setName('index');
 
-$app->get('/users', function ($request, $response) use ($usersFile) {
-    $usersData = json_decode(file_get_contents($usersFile), true);
+$app->get('/users', function ($request, $response) {
+    $usersData = json_decode($request->getCookieParam('users', json_encode([])), true);
 
     $userName = $request->getQueryParam('user');
 
@@ -56,7 +52,7 @@ $app->get('/users/new', function ($request, $response) {
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('users.new');
 
-$app->post('/users', function ($request, $response) use ($usersFile) {
+$app->post('/users', function ($request, $response) {
     $validator = new Validator();
     $user = $request->getParsedBodyParam('user');
     $errors = $validator->validate($user);
@@ -77,15 +73,15 @@ $app->post('/users', function ($request, $response) use ($usersFile) {
         'email' => $user["email"],
     ];
 
-    $existingUsers = json_decode(file_get_contents($usersFile), true);
+    $existingUsers = json_decode($request->getCookieParam('users', json_encode([])), true);
 
     $existingUsers[] = $newUser;
 
-    file_put_contents($usersFile, json_encode($existingUsers, JSON_PRETTY_PRINT));
+    $encodedUsers = json_encode($existingUsers);
 
     $this->get('flash')->addMessage('success', 'User was added successfully');
 
-    return $response->withHeader('Location', '/users')->withStatus(302);
+    return $response->withHeader('Set-Cookie', "users={$encodedUsers}")->withRedirect('/users', 302);
 })->setName('users.store');
 
 $app->get('/courses/{id}', function ($request, $response, array $args) {
@@ -93,10 +89,10 @@ $app->get('/courses/{id}', function ($request, $response, array $args) {
     return $response->write("Course id: {$id}");
 })->setName('courses.show');
 
-$app->get('/users/{id}', function ($request, $response, $args) use ($usersFile) {
+$app->get('/users/{id}', function ($request, $response, $args) {
     $userId = $args['id'];
 
-    $existingUsers = json_decode(file_get_contents($usersFile), true);
+    $existingUsers = json_decode($request->getCookieParam('users', json_encode([])), true);
 
     $userExists = false;
     foreach ($existingUsers as $user) {
@@ -116,9 +112,9 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($usersFile) 
     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
 })->setName('users.show');
 
-$app->get('/users/{id}/edit', function ($request, $response, $args) use ($usersFile) {
+$app->get('/users/{id}/edit', function ($request, $response, $args) {
     $userId = $args['id'];
-    $users = json_decode(file_get_contents($usersFile), true);
+    $users = json_decode($request->getCookieParam('users', json_encode([])), true);
 
     $user = null;
     foreach ($users as $existingUser) {
@@ -132,9 +128,9 @@ $app->get('/users/{id}/edit', function ($request, $response, $args) use ($usersF
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
 })->setName('users.edit');
 
-$app->patch('/users/{id}', function ($request, $response, array $args) use ($usersFile) {
+$app->patch('/users/{id}', function ($request, $response, array $args) {
     $userId = $args['id'];
-    $users = json_decode(file_get_contents($usersFile), true);
+    $users = json_decode($request->getCookieParam('users', json_encode([])), true);
     $user = null;
     foreach ($users as $existingUser) {
         if ($existingUser['id'] == $userId) {
@@ -156,9 +152,9 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
             }
         }
 
-        file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
+        $encodedUsers = json_encode($users);
 
-        return $response->withRedirect('/users/' . $userId, 302);
+        return $response->withHeader('Set-Cookie', "users={$encodedUsers}")->withRedirect('/users/' . $userId, 302);
     }
 
     $params = [
@@ -170,17 +166,18 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
 });
 
-$app->delete('/users/{id}', function ($request, $response, array $args) use ($usersFile) {
+$app->delete('/users/{id}', function ($request, $response, array $args) {
     $id = $args['id'];
-    $users = json_decode(file_get_contents($usersFile), true);
+    $users = json_decode($request->getCookieParam('users', json_encode([])), true);
     $index = array_search($id, array_column($users, 'id'));
 
     array_splice($users, $index, 1);
-    file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
+
+    $encodedUsers = json_encode($users);
 
     $this->get('flash')->addMessage('success', 'School has been deleted');
 
-    return $response->withRedirect('/users', 302);
+    return $response->withHeader('Set-Cookie', "users={$encodedUsers}")->withRedirect('/users', 302);
 });
 
 $app->run();
