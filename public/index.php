@@ -132,7 +132,7 @@ $app->get('/users/{id}/edit', function ($request, $response, $args) use ($usersF
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
 })->setName('users.edit');
 
-$app->patch('/users/{id}', function ($request, $response, array $args) use ($usersFile)  {
+$app->patch('/users/{id}', function ($request, $response, array $args) use ($usersFile) {
     $userId = $args['id'];
     $users = json_decode(file_get_contents($usersFile), true);
     $user = null;
@@ -157,7 +157,7 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
         }
 
         file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
-        
+
         return $response->withRedirect('/users/' . $userId, 302);
     }
 
@@ -168,6 +168,19 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
 
     $response = $response->withStatus(422);
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+});
+
+$app->delete('/users/{id}', function ($request, $response, array $args) use ($usersFile) {
+    $id = $args['id'];
+    $users = json_decode(file_get_contents($usersFile), true);
+    $index = array_search($id, array_column($users, 'id'));
+
+    array_splice($users, $index, 1);
+    file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
+
+    $this->get('flash')->addMessage('success', 'School has been deleted');
+
+    return $response->withRedirect('/users', 302);
 });
 
 $app->run();
